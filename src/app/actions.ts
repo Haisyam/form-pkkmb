@@ -169,6 +169,22 @@ export async function submitRegistration(
     };
   } catch (error: any) {
     console.error('Registration validation error:', error);
+    const errStr = String(error?.message || '');
+
+    if (errStr.includes('UNIQUE constraint failed: registrations.group_id') || errStr.includes('group_id')) {
+      return {
+        success: false,
+        message: `Maaf, kelompok yang Anda pilih baru saja diambil oleh mentor lain dalam hitungan milidetik yang sama. Silakan pilih kelompok lain yang masih tersedia.`,
+      };
+    }
+
+    if (errStr.includes('UNIQUE constraint failed: registrations.npm') || errStr.includes('students.npm')) {
+      return {
+        success: false,
+        message: `NPM Anda sudah terdaftar di sistem. Setiap mentor hanya diperbolehkan memilih 1 kelompok.`,
+      };
+    }
+
     return {
       success: false,
       message: error.message || 'Gagal mendaftar kelompok.',
