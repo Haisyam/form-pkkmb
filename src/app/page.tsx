@@ -33,10 +33,16 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [fetchGroups]);
 
+  // Auto-switch selected group if current selection becomes claimed/unavailable
   useEffect(() => {
-    const available = groups.find((g) => g.status === 'available');
-    if (available && selectedGroupId === '') {
-      setSelectedGroupId(available.id);
+    const availableList = groups.filter((g) => g.status === 'available');
+    if (availableList.length > 0) {
+      const isStillAvailable = availableList.some((g) => g.id === Number(selectedGroupId));
+      if (!isStillAvailable || selectedGroupId === '') {
+        setSelectedGroupId(availableList[0].id);
+      }
+    } else {
+      setSelectedGroupId('');
     }
   }, [groups, selectedGroupId]);
 
@@ -92,7 +98,7 @@ export default function HomePage() {
               Pemilihan Kelompok Mentor
             </h1>
             <p className="text-xs text-slate-500">
-              Pilih kelompok mentor yang tersedia. Kelompok yang sudah dipilih akan langsung terkunci.
+              Pilih kelompok mentor yang tersedia. Kelompok yang sudah dipilih otomatis disembunyikan.
             </p>
           </div>
 
@@ -209,7 +215,7 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* Dropdown Kelompok Available */}
+            {/* Dropdown Kelompok Available (Kelompok Terisi HILANG / TIDAK DITAMPILKAN) */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
                 Pilih Kelompok ({availableGroups.length} Kelompok Tersedia)
@@ -226,7 +232,7 @@ export default function HomePage() {
                 >
                   {availableGroups.map((g) => (
                     <option key={g.id} value={g.id}>
-                      {g.nama_kelompok} — (Tersedia)
+                      {g.nama_kelompok}
                     </option>
                   ))}
                 </select>
