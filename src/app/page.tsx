@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getGroupsStatus, submitRegistration, adminResetRegistration, GroupItem } from '@/app/actions';
-import { User, GraduationCap, Send, RefreshCw, CheckCircle2, AlertCircle, Sparkles, Lock, Trash2 } from 'lucide-react';
+import { getGroupsStatus, submitRegistration, GroupItem } from '@/app/actions';
+import { User, GraduationCap, Send, RefreshCw, CheckCircle2, AlertCircle, Sparkles, Lock } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function HomePage() {
@@ -61,12 +61,6 @@ export default function HomePage() {
     } else {
       setFeedback({ type: 'error', message: res.message });
     }
-  };
-
-  const handleResetGroup = async (mentorNpm: string, groupName: string) => {
-    if (!confirm(`Reset pendaftaran ${groupName}?`)) return;
-    const res = await adminResetRegistration(mentorNpm);
-    if (res.success) fetchGroups();
   };
 
   const availableGroups = groups.filter((g) => g.status === 'available');
@@ -141,7 +135,7 @@ export default function HomePage() {
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: 202401031"
+                  placeholder="Masukkan NPM Anda..."
                   value={npm}
                   onChange={(e) => setNpm(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white"
@@ -195,7 +189,7 @@ export default function HomePage() {
 
         </div>
 
-        {/* Live Data Monitor Minimalis */}
+        {/* Live Data Monitor Minimalis (Tampilan Publik Tanpa Tombol Hapus) */}
         <div className="bg-white/80 backdrop-blur-md rounded-3xl p-5 border border-slate-200/80 shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -217,20 +211,19 @@ export default function HomePage() {
                   key={g.id}
                   className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl flex items-center justify-between text-xs"
                 >
-                  <div>
-                    <span className="font-bold text-blue-900 mr-2">{g.nama_kelompok}:</span>
-                    <span className="font-semibold text-slate-800">{g.mentor_nama}</span>
-                    <span className="text-slate-500 font-mono text-[11px] ml-1 font-normal">
-                      ({g.mentor_npm})
-                    </span>
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <div>
+                      <span className="font-bold text-blue-900 mr-2">{g.nama_kelompok}:</span>
+                      <span className="font-semibold text-slate-800">{g.mentor_nama}</span>
+                      <span className="text-slate-500 font-mono text-[11px] ml-1.5 font-normal">
+                        ({g.mentor_npm})
+                      </span>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => handleResetGroup(g.mentor_npm!, g.nama_kelompok)}
-                    className="text-slate-400 hover:text-red-600 transition-colors p-1"
-                    title="Reset Pendaftaran"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-blue-200">
+                    Terisi
+                  </span>
                 </div>
               ))}
             </div>
