@@ -63,13 +63,12 @@ export default function AdminDashboardPage() {
     }
 
     // Format CSV for Excel Compatibility (with BOM for UTF-8 in Excel)
-    const headers = ['No', 'Kelompok', 'Nama Mentor', 'NPM', 'Kategori Ormawa', 'Waktu Daftar'];
+    const headers = ['No', 'Kelompok', 'Nama Mentor', 'NPM', 'Waktu Daftar'];
     const rows = takenGroups.map((g, index) => [
       index + 1,
       `"${g.nama_kelompok}"`,
       `"${g.mentor_nama || ''}"`,
       `"${g.mentor_npm || ''}"`,
-      `"${g.mentor_prodi || ''}"`,
       `"${g.registered_at ? new Date(g.registered_at).toLocaleString('id-ID') : ''}"`,
     ]);
 
@@ -179,7 +178,6 @@ export default function AdminDashboardPage() {
                   <th className="p-4">Status</th>
                   <th className="p-4">Nama Mentor</th>
                   <th className="p-4">NPM</th>
-                  <th className="p-4">Kategori Ormawa</th>
                   <th className="p-4 text-right">Aksi Admin</th>
                 </tr>
               </thead>
@@ -214,9 +212,6 @@ export default function AdminDashboardPage() {
                         ) : (
                           <span className="text-slate-300">-</span>
                         )}
-                      </td>
-                      <td className="p-4 text-slate-600">
-                        {isTaken ? g.mentor_prodi : '-'}
                       </td>
                       <td className="p-4 text-right">
                         {isTaken && (
