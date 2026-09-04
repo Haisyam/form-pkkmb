@@ -32,7 +32,7 @@ export async function getGroupsStatus(): Promise<GroupItem[]> {
         g.nama_kelompok,
         g.deskripsi,
         g.status,
-        s.nama as mentor_nama,
+        UPPER(s.nama) as mentor_nama,
         s.npm as mentor_npm,
         s.prodi as mentor_prodi,
         r.no_wa as mentor_wa,
@@ -59,8 +59,8 @@ export async function submitRegistration(
 ): Promise<{ success: boolean; message: string; groupName?: string }> {
   try {
     const cleanNpm = npmInput.trim();
-    const cleanNama = namaInput.trim();
-    const cleanUkuran = (ukuranBajuInput || 'M').trim();
+    const cleanNama = namaInput.trim().toUpperCase();
+    const cleanUkuran = (ukuranBajuInput || 'M').trim().toUpperCase();
 
     if (!cleanNpm || !cleanNama || !groupId) {
       return { success: false, message: 'Harap lengkapi Nama, NPM, dan Pilih Kelompok.' };
@@ -68,14 +68,25 @@ export async function submitRegistration(
 
     // Atomic SQLite Transaction
     const runClaimTransaction = db.transaction(() => {
-      // 1. Ensure student exists in students table
-      db.prepare(`
-        INSERT INTO students (npm, nama, prodi, is_registered) 
-        VALUES (?, ?, 'Mentor PKKMB UNMA', 0)
-        ON CONFLICT(npm) DO UPDATE SET nama = excluded.nama
-      `).run(cleanNpm, cleanNama);
+      // 1. Strict NPM verification against official database
+      const student = db.prepare('SELECT * FROM students WHERE TRIM(npm) = TRIM(?)').get(cleanNpm) as Student | undefined;
 
-      const student = db.prepare('SELECT * FROM students WHERE npm = ?').get(cleanNpm) as Student;
+      if (!student) {
+        throw new Error(`NPM ${cleanNpm} tidak terdaftar dalam draf resmi Mentor PKKMB UNMA 2026/2027. Silakan periksa kembali NPM Anda.`);
+      }
+
+      // Flexible name matching against uppercase names
+      const inputUpper = cleanNama.toUpperCase();
+      const officialUpper = student.nama.toUpperCase();
+
+      const isNameMatch = 
+        officialUpper.includes(inputUpper) || 
+        inputUpper.includes(officialUpper) ||
+        officialUpper.split(' ').some((word) => word.length > 2 && inputUpper.includes(word));
+
+      if (!isNameMatch) {
+        throw new Error(`Nama "${cleanNama}" tidak cocok dengan pemilik NPM ${cleanNpm} di draf resmi mentor UNMA (${officialUpper}).`);
+      }
 
       // Check if NPM has already registered
       if (student.is_registered) {
@@ -84,9 +95,9 @@ export async function submitRegistration(
           FROM registrations r 
           JOIN groups g ON r.group_id = g.id 
           WHERE r.npm = ?
-        `).get(cleanNpm) as { nama_kelompok: string } | undefined;
+        `).get(student.npm) as { nama_kelompok: string } | undefined;
 
-        throw new Error(`NPM ${cleanNpm} (${student.nama}) sudah terdaftar memilih ${existingReg?.nama_kelompok || 'Kelompok lain'}.`);
+        throw new Error(`NPM ${cleanNpm} (${officialUpper}) sudah terdaftar memilih ${existingReg?.nama_kelompok || 'Kelompok lain'}.`);
       }
 
       // 2. Check if selected group is available
@@ -98,8 +109,8 @@ export async function submitRegistration(
         throw new Error(`Maaf, ${group.nama_kelompok} baru saja diambil oleh mentor lain. Silakan pilih kelompok yang masih tersedia.`);
       }
 
-      // 3. Mark student as registered
-      db.prepare('UPDATE students SET is_registered = 1 WHERE npm = ?').run(cleanNpm);
+      // 3. Mark student as registered with UPPERCASE name
+      db.prepare('UPDATE students SET nama = ?, is_registered = 1 WHERE npm = ?').run(officialUpper, student.npm);
 
       // 4. Lock group status to taken
       const updateRes = db.prepare("UPDATE groups SET status = 'taken' WHERE id = ? AND status = 'available'").run(groupId);
@@ -107,24 +118,24 @@ export async function submitRegistration(
         throw new Error(`Gagal mengambil ${group.nama_kelompok}. Kelompok sudah terisi.`);
       }
 
-      // 5. Clean stale registration records & insert new registration with ukuran_baju
-      db.prepare('DELETE FROM registrations WHERE npm = ? OR group_id = ?').run(cleanNpm, groupId);
-      db.prepare('INSERT INTO registrations (npm, group_id, no_wa, ukuran_baju) VALUES (?, ?, ?, ?)').run(cleanNpm, groupId, '-', cleanUkuran);
+      // 5. Clean stale registration records & insert new registration
+      db.prepare('DELETE FROM registrations WHERE npm = ? OR group_id = ?').run(student.npm, groupId);
+      db.prepare('INSERT INTO registrations (npm, group_id, no_wa, ukuran_baju) VALUES (?, ?, ?, ?)').run(student.npm, groupId, '-', cleanUkuran);
 
-      return group.nama_kelompok;
+      return { groupName: group.nama_kelompok, officialNama: officialUpper };
     });
 
-    const claimedGroupName = runClaimTransaction();
+    const result = runClaimTransaction();
 
     revalidatePath('/');
     revalidatePath('/admin');
     return {
       success: true,
-      message: `Berhasil! ${cleanNama} (NPM: ${cleanNpm}) resmi terdaftar sebagai Mentor untuk ${claimedGroupName} (Ukuran Baju: ${cleanUkuran}).`,
-      groupName: claimedGroupName,
+      message: `Berhasil! ${result.officialNama} (NPM: ${cleanNpm}) resmi terdaftar sebagai Mentor untuk ${result.groupName} (Ukuran Baju: ${cleanUkuran}).`,
+      groupName: result.groupName,
     };
   } catch (error: any) {
-    console.error('Registration error:', error);
+    console.error('Registration validation error:', error);
     return {
       success: false,
       message: error.message || 'Gagal mendaftar kelompok.',

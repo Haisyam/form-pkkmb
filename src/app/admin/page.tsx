@@ -67,9 +67,9 @@ export default function AdminDashboardPage() {
     const rows = takenGroups.map((g, index) => [
       index + 1,
       `"${g.nama_kelompok}"`,
-      `"${g.mentor_nama || ''}"`,
+      `"${(g.mentor_nama || '').toUpperCase()}"`,
       `"${g.mentor_npm || ''}"`,
-      `"${g.ukuran_baju || '-'}"`,
+      `"${(g.ukuran_baju || '-').toUpperCase()}"`,
       `"${g.registered_at ? new Date(g.registered_at).toLocaleString('id-ID') : ''}"`,
     ]);
 
@@ -154,7 +154,7 @@ export default function AdminDashboardPage() {
                 placeholder="Cari kelompok, nama, NPM, baju..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium"
               />
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
             </div>
@@ -206,9 +206,9 @@ export default function AdminDashboardPage() {
                       </td>
                       <td className="p-4">
                         {isTaken ? (
-                          <span className="font-bold text-slate-900">{g.mentor_nama}</span>
+                          <span className="font-extrabold text-slate-900 uppercase">{g.mentor_nama}</span>
                         ) : (
-                          <span className="text-slate-400 italic">Belum ada mentor</span>
+                          <span className="text-slate-400 italic font-normal">Belum ada mentor</span>
                         )}
                       </td>
                       <td className="p-4 font-mono">
@@ -220,7 +220,7 @@ export default function AdminDashboardPage() {
                       </td>
                       <td className="p-4 font-bold text-blue-800">
                         {isTaken ? (
-                          <span className="bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
+                          <span className="bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200 uppercase">
                             {g.ukuran_baju || '-'}
                           </span>
                         ) : (

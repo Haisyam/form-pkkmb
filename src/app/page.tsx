@@ -47,12 +47,12 @@ export default function HomePage() {
       return;
     }
 
-    const finalUkuran = ukuranOption === 'custom' ? (customUkuran.trim() || 'Custom') : ukuranOption;
+    const finalUkuran = (ukuranOption === 'custom' ? (customUkuran.trim() || 'Custom') : ukuranOption).toUpperCase();
 
     setSubmitting(true);
     setFeedback(null);
 
-    const res = await submitRegistration(npm, nama, Number(selectedGroupId), finalUkuran);
+    const res = await submitRegistration(npm, nama.toUpperCase(), Number(selectedGroupId), finalUkuran);
     setSubmitting(false);
 
     if (res.success) {
@@ -120,16 +120,16 @@ export default function HomePage() {
             {/* Input Nama */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Nama Lengkap
+                Nama Lengkap (Huruf Kapital)
               </label>
               <div className="relative">
                 <input
                   type="text"
                   required
-                  placeholder="Masukkan Nama Lengkap Anda..."
+                  placeholder="MASUKKAN NAMA LENGKAP..."
                   value={nama}
-                  onChange={(e) => setNama(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 font-medium focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  onChange={(e) => setNama(e.target.value.toUpperCase())}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 font-bold uppercase tracking-wide focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white"
                 />
                 <User className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5" />
               </div>
@@ -144,7 +144,7 @@ export default function HomePage() {
                 <input
                   type="text"
                   required
-                  placeholder="Masukkan NPM Anda..."
+                  placeholder="Contoh: 2322101009"
                   value={npm}
                   onChange={(e) => setNpm(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white"
@@ -202,8 +202,8 @@ export default function HomePage() {
                     type="text"
                     placeholder="Contoh: 3XL / 4XL / Custom LD 120cm..."
                     value={customUkuran}
-                    onChange={(e) => setCustomUkuran(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-blue-50/50 border border-blue-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => setCustomUkuran(e.target.value.toUpperCase())}
+                    className="w-full px-4 py-2.5 bg-blue-50/50 border border-blue-200 rounded-xl text-xs font-bold uppercase text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               )}
@@ -280,7 +280,7 @@ export default function HomePage() {
                     <Lock className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                     <div>
                       <span className="font-bold text-blue-900 mr-2">{g.nama_kelompok}:</span>
-                      <span className="font-semibold text-slate-800">{g.mentor_nama}</span>
+                      <span className="font-extrabold text-slate-900 uppercase">{g.mentor_nama}</span>
                       <span className="text-slate-500 font-mono text-[11px] ml-1.5 font-normal">
                         ({g.mentor_npm})
                       </span>
