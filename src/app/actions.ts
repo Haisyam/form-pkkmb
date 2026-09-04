@@ -1,0 +1,142 @@
+'use server';
+
+import db from '@/lib/db';
+import { revalidatePath } from 'next/cache';
+
+export interface Student {
+  npm: string;
+  nama: string;
+  prodi: string;
+  is_registered: number;
+}
+
+export interface GroupItem {
+  id: number;
+  nama_kelompok: string;
+  deskripsi: string;
+  status: 'available' | 'taken';
+  mentor_nama?: string;
+  mentor_npm?: string;
+  mentor_prodi?: string;
+  mentor_wa?: string;
+  registered_at?: string;
+}
+
+export async function getGroupsStatus(): Promise<GroupItem[]> {
+  try {
+    const rows = db.prepare(`
+      SELECT 
+        g.id,
+        g.nama_kelompok,
+        g.deskripsi,
+        g.status,
+        s.nama as mentor_nama,
+        s.npm as mentor_npm,
+        s.prodi as mentor_prodi,
+        r.no_wa as mentor_wa,
+        r.registered_at
+      FROM groups g
+      LEFT JOIN registrations r ON g.id = r.group_id
+      LEFT JOIN students s ON r.npm = s.npm
+      ORDER BY g.id ASC
+    `).all() as GroupItem[];
+
+    return rows;
+  } catch (error) {
+    console.error('Error fetching groups:', error);
+    return [];
+  }
+}
+
+export async function submitRegistration(
+  npmInput: string,
+  namaInput: string,
+  groupId: number
+): Promise<{ success: boolean; message: string; groupName?: string }> {
+  try {
+    const cleanNpm = npmInput.trim();
+    const cleanNama = namaInput.trim();
+
+    if (!cleanNpm || !cleanNama || !groupId) {
+      return { success: false, message: 'Harap lengkapi Nama, NPM, dan Pilih Kelompok.' };
+    }
+
+    // Atomic SQLite Transaction
+    const runClaimTransaction = db.transaction(() => {
+      // 1. Strict NPM verification against official database
+      const student = db.prepare('SELECT * FROM students WHERE npm = ?').get(cleanNpm) as Student | undefined;
+
+      if (!student) {
+        throw new Error(`NPM ${cleanNpm} tidak terdaftar dalam draf calon mentor PKKMB UNMA 2026/2027. Silakan periksa kembali NPM Anda.`);
+      }
+
+      // Check if student NPM has already claimed a group
+      if (student.is_registered) {
+        const existingReg = db.prepare(`
+          SELECT g.nama_kelompok 
+          FROM registrations r 
+          JOIN groups g ON r.group_id = g.id 
+          WHERE r.npm = ?
+        `).get(cleanNpm) as { nama_kelompok: string } | undefined;
+
+        throw new Error(`NPM ${cleanNpm} (${student.nama}) sudah terdaftar memilih ${existingReg?.nama_kelompok || 'Kelompok lain'}.`);
+      }
+
+      // 2. Check if selected group is available
+      const group = db.prepare('SELECT * FROM groups WHERE id = ?').get(groupId) as GroupItem | undefined;
+      if (!group) {
+        throw new Error('Kelompok yang dipilih tidak valid.');
+      }
+      if (group.status !== 'available') {
+        throw new Error(`Maaf, ${group.nama_kelompok} baru saja diambil oleh mentor lain. Silakan pilih kelompok yang masih tersedia.`);
+      }
+
+      // 3. Update student name if user formatted differently and set is_registered = 1
+      db.prepare('UPDATE students SET nama = ?, is_registered = 1 WHERE npm = ?').run(cleanNama, cleanNpm);
+
+      // 4. Atomically lock group status to taken
+      const updateRes = db.prepare("UPDATE groups SET status = 'taken' WHERE id = ? AND status = 'available'").run(groupId);
+      if (updateRes.changes === 0) {
+        throw new Error(`Gagal mengambil ${group.nama_kelompok}. Kelompok sudah terisi.`);
+      }
+
+      // 5. Insert registration record
+      db.prepare('INSERT INTO registrations (npm, group_id, no_wa) VALUES (?, ?, ?)').run(cleanNpm, groupId, '-');
+
+      return group.nama_kelompok;
+    });
+
+    const claimedGroupName = runClaimTransaction();
+
+    revalidatePath('/');
+    return {
+      success: true,
+      message: `Berhasil! ${cleanNama} (NPM: ${cleanNpm}) resmi terdaftar sebagai Mentor untuk ${claimedGroupName}.`,
+      groupName: claimedGroupName,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || 'Gagal mendaftar kelompok.',
+    };
+  }
+}
+
+export async function adminResetRegistration(npmInput: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const runReset = db.transaction(() => {
+      const reg = db.prepare('SELECT group_id FROM registrations WHERE npm = ?').get(npmInput) as { group_id: number } | undefined;
+      if (reg) {
+        db.prepare("UPDATE groups SET status = 'available' WHERE id = ?").run(reg.group_id);
+        db.prepare('DELETE FROM registrations WHERE npm = ?').run(npmInput);
+      }
+      db.prepare('UPDATE students SET is_registered = 0 WHERE npm = ?').run(npmInput);
+    });
+
+    runReset();
+    revalidatePath('/');
+    return { success: true, message: `Pendaftaran NPM ${npmInput} berhasil direset.` };
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Gagal mereset data.' };
+  }
+}
