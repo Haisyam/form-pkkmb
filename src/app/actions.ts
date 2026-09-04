@@ -26,6 +26,11 @@ export interface GroupItem {
 
 export async function getGroupsStatus(): Promise<GroupItem[]> {
   try {
+    // Flush any pending WAL checkpoint to guarantee reading freshest committed data from disk
+    try {
+      db.pragma('wal_checkpoint(PASSIVE)');
+    } catch (e) {}
+
     const rows = db.prepare(`
       SELECT 
         g.id,
@@ -75,20 +80,7 @@ export async function submitRegistration(
         throw new Error(`NPM ${cleanNpm} tidak terdaftar dalam draf resmi Mentor PKKMB UNMA 2026/2027. Silakan periksa kembali NPM Anda.`);
       }
 
-      // Flexible name matching
-      const inputUpper = cleanNama.toUpperCase();
-      const officialUpper = student.nama.toUpperCase();
-
-      const isNameMatch = 
-        officialUpper.includes(inputUpper) || 
-        inputUpper.includes(officialUpper) ||
-        officialUpper.split(' ').some((word) => word.length > 2 && inputUpper.includes(word));
-
-      if (!isNameMatch) {
-        throw new Error(`Nama "${cleanNama}" tidak cocok dengan pemilik NPM ${cleanNpm} di draf resmi mentor UNMA (${officialUpper}).`);
-      }
-
-      // STRICT BLOCK: Check if NPM has ALREADY claimed a group in registrations table OR students.is_registered
+      // Strict Block: Check if NPM has ALREADY claimed a group
       const existingReg = db.prepare(`
         SELECT g.nama_kelompok 
         FROM registrations r 
@@ -97,7 +89,7 @@ export async function submitRegistration(
       `).get(student.npm) as { nama_kelompok: string } | undefined;
 
       if (student.is_registered || existingReg) {
-        throw new Error(`NPM ${cleanNpm} (${officialUpper}) sudah mendaftar sebelumnya untuk ${existingReg?.nama_kelompok || 'Kelompok lain'}. Setiap mentor hanya diperbolehkan memilih 1 kelompok.`);
+        throw new Error(`NPM ${cleanNpm} (${student.nama}) sudah mendaftar sebelumnya untuk ${existingReg?.nama_kelompok || 'Kelompok lain'}. Setiap mentor hanya diperbolehkan memilih 1 kelompok.`);
       }
 
       // 2. Check if selected group is available
@@ -109,8 +101,8 @@ export async function submitRegistration(
         throw new Error(`Maaf, ${group.nama_kelompok} baru saja diambil oleh mentor lain. Silakan pilih kelompok yang masih tersedia.`);
       }
 
-      // 3. Mark student as registered
-      db.prepare('UPDATE students SET nama = ?, is_registered = 1 WHERE npm = ?').run(officialUpper, student.npm);
+      // 3. Mark student as registered with UPPERCASE submitted name
+      db.prepare('UPDATE students SET nama = ?, is_registered = 1 WHERE npm = ?').run(cleanNama, student.npm);
 
       // 4. Lock group status to taken
       const updateRes = db.prepare("UPDATE groups SET status = 'taken' WHERE id = ? AND status = 'available'").run(groupId);
@@ -118,16 +110,23 @@ export async function submitRegistration(
         throw new Error(`Gagal mengambil ${group.nama_kelompok}. Kelompok sudah terisi.`);
       }
 
-      // 5. Insert registration
+      // 5. Clean stale registration records & insert new registration
+      db.prepare('DELETE FROM registrations WHERE npm = ? OR group_id = ?').run(student.npm, groupId);
       db.prepare('INSERT INTO registrations (npm, group_id, no_wa, ukuran_baju) VALUES (?, ?, ?, ?)').run(student.npm, groupId, '-', cleanUkuran);
 
-      return { groupName: group.nama_kelompok, officialNama: officialUpper };
+      return { groupName: group.nama_kelompok, officialNama: cleanNama };
     });
 
     const result = runClaimTransaction();
 
+    // Flush WAL to disk immediately so concurrent read queries see the change instantly
+    try {
+      db.pragma('wal_checkpoint(TRUNCATE)');
+    } catch (e) {}
+
     revalidatePath('/');
     revalidatePath('/admin');
+
     return {
       success: true,
       message: `Berhasil! ${result.officialNama} (NPM: ${cleanNpm}) resmi terdaftar sebagai Mentor untuk ${result.groupName} (Ukuran Baju: ${cleanUkuran}).`,
@@ -190,6 +189,11 @@ export async function adminResetRegistration(npmInput: string): Promise<{ succes
     });
 
     runReset();
+
+    try {
+      db.pragma('wal_checkpoint(TRUNCATE)');
+    } catch (e) {}
+
     revalidatePath('/');
     revalidatePath('/admin');
     return { success: true, message: `Pendaftaran NPM ${npmInput} berhasil direset.` };

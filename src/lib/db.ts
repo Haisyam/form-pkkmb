@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
+import { createClient } from '@libsql/client';
 import path from 'path';
-import fs from 'fs';
 
 let dbPath = path.join(process.cwd(), 'pkkmb_mentor.db');
 
@@ -95,7 +95,8 @@ const unmaMentorsList = [
 function seedDatabase() {
   // Ensure 30 groups exist WITHOUT deleting existing taken groups!
   const groupCount = db.prepare('SELECT COUNT(*) as count FROM groups').get() as { count: number };
-  if (groupCount.count === 0) {
+  if (groupCount.count < 30) {
+    db.prepare('DELETE FROM groups').run();
     const insertGroup = db.prepare('INSERT OR IGNORE INTO groups (nama_kelompok, deskripsi, status) VALUES (?, ?, ?)');
     const insertMany = db.transaction((groupsList: { name: string; desc: string }[]) => {
       for (const g of groupsList) {
