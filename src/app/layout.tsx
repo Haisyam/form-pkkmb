@@ -22,7 +22,9 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'Panitia Pelaksana PKKMB UNMA 2026/2027' }],
   icons: {
-    icon: logoUrl,
+    icon: [
+      { url: logoUrl, type: 'image/png' },
+    ],
     shortcut: logoUrl,
     apple: logoUrl,
   },
@@ -58,7 +60,9 @@ export default function RootLayout({
     <html lang="id" className={plusJakarta.variable}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href={logoUrl} type="image/png" />
+        <link rel="icon" href={logoUrl} type="image/png" sizes="300x300" />
+        <link rel="shortcut icon" href={logoUrl} type="image/png" />
+        <link rel="apple-touch-icon" href={logoUrl} />
       </head>
       <body className="antialiased min-h-screen bg-slate-50 text-slate-900 selection:bg-blue-600 selection:text-white">
         {children}
