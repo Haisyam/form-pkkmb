@@ -1,7 +1,25 @@
 import { createClient } from '@libsql/client';
-import dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
-dotenv.config({ path: '.env' });
+import fs from 'fs';
+import path from 'path';
+
+function loadEnvFile(filePath) {
+  if (fs.existsSync(filePath)) {
+    const content = fs.readFileSync(filePath, 'utf8');
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+        const [key, ...vals] = trimmed.split('=');
+        const val = vals.join('=').trim().replace(/^["']|["']$/g, '');
+        if (key && !process.env[key.trim()]) {
+          process.env[key.trim()] = val;
+        }
+      }
+    }
+  }
+}
+
+loadEnvFile(path.join(process.cwd(), '.env.local'));
+loadEnvFile(path.join(process.cwd(), '.env'));
 
 const url = process.env.TURSO_DATABASE_URL || 'file:pkkmb_mentor.db';
 const authToken = process.env.TURSO_AUTH_TOKEN || undefined;
