@@ -9,9 +9,10 @@ export const db: Client = createClient({
 });
 
 export function getJakartaTimestamp(): string {
+  const timeZone = process.env.TIME || process.env.TZ || 'Asia/Jakarta';
   const now = new Date();
   const options: Intl.DateTimeFormatOptions = {
-    timeZone: 'Asia/Jakarta',
+    timeZone,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
