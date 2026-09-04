@@ -2,6 +2,7 @@
 
 import db from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 
 export interface Student {
   npm: string;
@@ -109,6 +110,7 @@ export async function submitRegistration(
     const claimedGroupName = runClaimTransaction();
 
     revalidatePath('/');
+    revalidatePath('/admin');
     return {
       success: true,
       message: `Berhasil! ${cleanNama} (NPM: ${cleanNpm}) resmi terdaftar sebagai Mentor untuk ${claimedGroupName}.`,
@@ -122,7 +124,43 @@ export async function submitRegistration(
   }
 }
 
+// ADMIN AUTHENTICATION SERVER ACTIONS
+export async function adminLogin(usernameInput: string, passwordInput: string): Promise<{ success: boolean; message: string }> {
+  const user = usernameInput.trim();
+  const pass = passwordInput.trim();
+
+  if (user === 'haisyam' && pass === '123@Haisyam') {
+    const cookieStore = await cookies();
+    cookieStore.set('admin_session', 'authenticated_haisyam_secret', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24, // 1 day
+      path: '/',
+    });
+    return { success: true, message: 'Login berhasil.' };
+  }
+
+  return { success: false, message: 'Username atau Password salah.' };
+}
+
+export async function adminLogout(): Promise<{ success: boolean }> {
+  const cookieStore = await cookies();
+  cookieStore.delete('admin_session');
+  return { success: true };
+}
+
+export async function isAdminAuthenticated(): Promise<boolean> {
+  const cookieStore = await cookies();
+  const session = cookieStore.get('admin_session');
+  return session?.value === 'authenticated_haisyam_secret';
+}
+
 export async function adminResetRegistration(npmInput: string): Promise<{ success: boolean; message: string }> {
+  const auth = await isAdminAuthenticated();
+  if (!auth) {
+    return { success: false, message: 'Akses ditolak. Silakan login terlebih dahulu.' };
+  }
+
   try {
     const runReset = db.transaction(() => {
       const reg = db.prepare('SELECT group_id FROM registrations WHERE npm = ?').get(npmInput) as { group_id: number } | undefined;
@@ -135,6 +173,7 @@ export async function adminResetRegistration(npmInput: string): Promise<{ succes
 
     runReset();
     revalidatePath('/');
+    revalidatePath('/admin');
     return { success: true, message: `Pendaftaran NPM ${npmInput} berhasil direset.` };
   } catch (error: any) {
     return { success: false, message: error.message || 'Gagal mereset data.' };
