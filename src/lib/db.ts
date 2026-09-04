@@ -123,6 +123,31 @@ export async function ensureDbInitialized() {
     }));
     await db.batch(studentStatements, 'write');
 
+    // Auto-seed registration for MUHAMAD HAISYAM KHAIRIZMI (2414101091) - Kelompok 14 - Baju L
+    const haisyamNpm = '2414101091';
+    const haisyamNama = 'MUHAMAD HAISYAM KHAIRIZMI';
+    const haisyamUkuran = 'L';
+    const targetGroupId = 14;
+    const jakartaTime = getJakartaTimestamp();
+
+    await db.batch(
+      [
+        {
+          sql: 'UPDATE students SET nama = ?, is_registered = 1 WHERE npm = ?',
+          args: [haisyamNama, haisyamNpm],
+        },
+        {
+          sql: "UPDATE groups SET status = 'taken' WHERE id = ?",
+          args: [targetGroupId],
+        },
+        {
+          sql: 'INSERT INTO registrations (npm, group_id, no_wa, ukuran_baju, registered_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(npm) DO UPDATE SET group_id = excluded.group_id, ukuran_baju = excluded.ukuran_baju',
+          args: [haisyamNpm, targetGroupId, '-', haisyamUkuran, jakartaTime],
+        },
+      ],
+      'write'
+    );
+
     isInitialized = true;
   } catch (error) {
     console.error('Error initializing database:', error);
