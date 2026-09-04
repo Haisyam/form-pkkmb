@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { getGroupsStatus, submitRegistration, GroupItem } from '@/app/actions';
-import { User, GraduationCap, Send, RefreshCw, CheckCircle2, AlertCircle, Sparkles, Lock, Shirt } from 'lucide-react';
+import { User, GraduationCap, Send, RefreshCw, CheckCircle2, AlertCircle, Sparkles, Lock, Shirt, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function HomePage() {
@@ -19,7 +19,7 @@ export default function HomePage() {
   const [customUkuran, setCustomUkuran] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string; title?: string } | null>(null);
 
   const fetchGroups = useCallback(async () => {
     const data = await getGroupsStatus();
@@ -49,7 +49,11 @@ export default function HomePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nama.trim() || !npm.trim() || !selectedGroupId) {
-      setFeedback({ type: 'error', message: 'Harap lengkapi Nama, NPM, dan Kelompok.' });
+      setFeedback({
+        type: 'error',
+        title: 'Form Belum Lengkap',
+        message: 'Harap lengkapi Nama Lengkap, NPM, dan Pilih Kelompok.',
+      });
       return;
     }
 
@@ -62,9 +66,13 @@ export default function HomePage() {
     setSubmitting(false);
 
     if (res.success) {
-      setFeedback({ type: 'success', message: res.message });
+      setFeedback({
+        type: 'success',
+        title: 'Pendaftaran Berhasil 🎉',
+        message: res.message,
+      });
       try {
-        confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.5 } });
       } catch (err) {}
 
       setNama('');
@@ -74,7 +82,11 @@ export default function HomePage() {
       setCustomUkuran('');
       fetchGroups();
     } else {
-      setFeedback({ type: 'error', message: res.message });
+      setFeedback({
+        type: 'error',
+        title: 'Gagal Mendaftar',
+        message: res.message,
+      });
     }
   };
 
@@ -82,7 +94,7 @@ export default function HomePage() {
   const takenGroups = groups.filter((g) => g.status === 'taken');
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50/50 via-slate-50 to-blue-50/30 text-slate-900 flex items-center justify-center p-4 sm:p-6 font-sans">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50/50 via-slate-50 to-blue-50/30 text-slate-900 flex items-center justify-center p-4 sm:p-6 font-sans selection:bg-blue-600 selection:text-white">
       
       <div className="w-full max-w-xl space-y-6">
         
@@ -101,24 +113,6 @@ export default function HomePage() {
               Pilih kelompok mentor yang tersedia. Kelompok yang sudah dipilih otomatis disembunyikan.
             </p>
           </div>
-
-          {/* Alert Notifikasi */}
-          {feedback && (
-            <div
-              className={`p-3.5 rounded-2xl text-xs flex items-start gap-2.5 ${
-                feedback.type === 'success'
-                  ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-                  : 'bg-red-50 border border-red-200 text-red-800'
-              }`}
-            >
-              {feedback.type === 'success' ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-              )}
-              <div className="font-medium">{feedback.message}</div>
-            </div>
-          )}
 
           {/* Form Direct Submit */}
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -174,7 +168,7 @@ export default function HomePage() {
                     key={sz}
                     type="button"
                     onClick={() => setUkuranOption(sz)}
-                    className={`py-2 rounded-xl text-xs font-bold transition-all border ${
+                    className={`py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                       ukuranOption === sz
                         ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -190,7 +184,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => setUkuranOption('custom')}
-                  className={`w-full py-2 px-3 rounded-xl text-xs font-semibold border transition-all text-left flex items-center justify-between ${
+                  className={`w-full py-2 px-3 rounded-xl text-xs font-semibold border transition-all text-left flex items-center justify-between cursor-pointer ${
                     ukuranOption === 'custom'
                       ? 'bg-blue-50 text-blue-800 border-blue-300'
                       : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
@@ -303,6 +297,71 @@ export default function HomePage() {
 
       </div>
 
+      {/* MODAL NOTIFIKASI RESPONSIVE */}
+      {feedback && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setFeedback(null)}
+        >
+          <div
+            className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-5 animate-in zoom-in-95 duration-200 relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Background Decorator Gradient */}
+            <div
+              className={`absolute -top-24 -right-24 w-48 h-48 rounded-full blur-2xl opacity-20 pointer-events-none ${
+                feedback.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'
+              }`}
+            />
+
+            {/* Close Icon Button */}
+            <button
+              onClick={() => setFeedback(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Header Icon Badge */}
+            <div className="flex flex-col items-center text-center space-y-3 pt-2">
+              {feedback.type === 'success' ? (
+                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 ring-8 ring-emerald-50">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center shadow-lg shadow-red-500/20 ring-8 ring-red-50">
+                  <AlertCircle className="w-8 h-8" />
+                </div>
+              )}
+
+              <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">
+                {feedback.title || (feedback.type === 'success' ? 'Pendaftaran Berhasil!' : 'Pemberitahuan')}
+              </h3>
+
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                {feedback.message}
+              </p>
+            </div>
+
+            {/* Modal Action Button */}
+            <div className="pt-2">
+              <button
+                onClick={() => setFeedback(null)}
+                className={`w-full py-3.5 px-6 rounded-xl font-bold text-sm transition-all shadow-md cursor-pointer ${
+                  feedback.type === 'success'
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+                    : 'bg-red-600 hover:bg-red-700 text-white shadow-red-600/20'
+                }`}
+              >
+                {feedback.type === 'success' ? 'Selesai & Tutup' : 'Tutup & Coba Lagi'}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
+
