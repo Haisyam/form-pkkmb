@@ -24,41 +24,38 @@ export function getJakartaTimestamp(): string {
   return new Intl.DateTimeFormat('sv-SE', options).format(now);
 }
 
-// List of 30 official mentor candidates
+// List of 30 official mentor candidates (Data Terbaru 2026/2027)
 export const unmaMentorsList = [
-  // Ormawa Univ & UKM (16)
-  { npm: '2322101009', nama: 'FAIZ FATHULMILLAH', prodi: 'Ormawa Univ & UKM' },
-  { npm: '2301101002', nama: 'NABIEL BAYU SATRYA RAMADHAN', prodi: 'Ormawa Univ & UKM' },
-  { npm: '2301101052', nama: 'ALFAT ILAFATUHSHARA', prodi: 'Ormawa Univ & UKM' },
-  { npm: '2305101094', nama: 'RAFLI AULIA', prodi: 'Ormawa Univ & UKM' },
-  { npm: '2421101031', nama: 'GIAR FERDIAWAN', prodi: 'Ormawa Univ & UKM' },
-  { npm: '2304101024', nama: 'SYAHRUL DWI TEGUH NUROHIM', prodi: 'Ormawa Univ & UKM' },
-  { npm: '2404101035', nama: 'MUHAMAD ARIFIN', prodi: 'Ormawa Univ & UKM' },
-  { npm: '2310101006', nama: 'SYAHRIL HILMAN ALFARIZ', prodi: 'Ormawa Univ & UKM' },
-  { npm: '2324101005', nama: 'MUHAMAD FIDIYANDI', prodi: 'Ormawa Univ & UKM' },
-  { npm: '2305101136', nama: 'ACHMAD SYAYIDUL IKHROM', prodi: 'Ormawa Univ & UKM' },
-  { npm: '2410101019', nama: 'NAILATUL IZZAH NAPISAH', prodi: 'Ormawa Univ & UKM' },
-  { npm: '2422101135', nama: 'SALSABILA KH', prodi: 'Ormawa Univ & UKM' },
-  { npm: '2305101028', nama: 'DIPA FADILAN', prodi: 'Ormawa Univ & UKM' },
-  { npm: '2414101091', nama: 'MUHAMAD HAISYAM KHAIRIZMI', prodi: 'Ormawa Univ & UKM' },
-  { npm: '2322101016', nama: 'SITI NUR ANISSA', prodi: 'Ormawa Univ & UKM' },
-  { npm: '2411101002', nama: 'INTAN NUR AFIAH', prodi: 'Ormawa Univ & UKM' },
-
-  // Ormawa Fakultas (14)
-  { npm: '2410101007', nama: 'IZKA AGASTIAR', prodi: 'Ormawa Fakultas' },
-  { npm: '2310101004', nama: 'AYANG WIDIANINGSIH', prodi: 'Ormawa Fakultas' },
-  { npm: '2316101023', nama: 'N SUKMA ALKINDI', prodi: 'Ormawa Fakultas' },
-  { npm: '2314101048', nama: 'ROBBI ILHAM M', prodi: 'Ormawa Fakultas' },
-  { npm: '2306101036', nama: 'SRI NURAENI', prodi: 'Ormawa Fakultas' },
-  { npm: '2305101119', nama: "SEAN RA'UF AL-FARIZIE", prodi: 'Ormawa Fakultas' },
-  { npm: '2321101070', nama: 'FADHIL DWI SURYA', prodi: 'Ormawa Fakultas' },
-  { npm: '2521101038', nama: 'FARAH ADIBA', prodi: 'Ormawa Fakultas' },
-  { npm: '2307101019', nama: 'NAJIB MUHASYIN', prodi: 'Ormawa Fakultas' },
-  { npm: '2308101003', nama: 'AFIFAH NURAENI', prodi: 'Ormawa Fakultas' },
-  { npm: '2324101011', nama: 'GUGUN GUNAWAN', prodi: 'Ormawa Fakultas' },
-  { npm: '2422101205', nama: 'IRPAN NURHAQIQI', prodi: 'Ormawa Fakultas' },
-  { npm: '2301101037', nama: 'MUHAMAD GUNTUR', prodi: 'Ormawa Fakultas' },
-  { npm: '2318101044', nama: 'HAFIZH LAZUARDI DARMAWAN', prodi: 'Ormawa Fakultas' },
+  { npm: '2301101002', nama: 'NABIEL BAYU SATRYA RAMADHAN', prodi: 'Mentor PKKMB' },
+  { npm: '2301101037', nama: 'MUHAMAD GUNTUR ALFAREZZI', prodi: 'Mentor PKKMB' },
+  { npm: '2301101052', nama: 'ALFAT ILAFATUHSHARA', prodi: 'Mentor PKKMB' },
+  { npm: '2304101024', nama: 'SYAHRUL DWI TEGUH NUROHIM', prodi: 'Mentor PKKMB' },
+  { npm: '2305101028', nama: 'DIPA FADILAN', prodi: 'Mentor PKKMB' },
+  { npm: '2305101094', nama: 'RAFLI AULIA', prodi: 'Mentor PKKMB' },
+  { npm: '2305101119', nama: "SEAN RA'UF AL-FARIZIE", prodi: 'Mentor PKKMB' },
+  { npm: '2305101136', nama: 'ACHMAD SYAYIDUL IKHROM', prodi: 'Mentor PKKMB' },
+  { npm: '2306101036', nama: 'SRI NURAENI', prodi: 'Mentor PKKMB' },
+  { npm: '2307101019', nama: 'NAJIB MUHASYIN', prodi: 'Mentor PKKMB' },
+  { npm: '2308101003', nama: 'AFIFAH NURAENI', prodi: 'Mentor PKKMB' },
+  { npm: '2310101004', nama: 'AYANG WIDIANINGSIH', prodi: 'Mentor PKKMB' },
+  { npm: '2310101006', nama: 'SYAHRIL HILMAN ALFARIZ', prodi: 'Mentor PKKMB' },
+  { npm: '2314101048', nama: 'ROBBI ILHAM M', prodi: 'Mentor PKKMB' },
+  { npm: '2316101023', nama: 'N SUKMA ALKINDI', prodi: 'Mentor PKKMB' },
+  { npm: '2318101044', nama: 'HAFIZH LAZUARDI DARMAWAN', prodi: 'Mentor PKKMB' },
+  { npm: '2321101070', nama: 'FADHIL DWI SURYA', prodi: 'Mentor PKKMB' },
+  { npm: '2322101009', nama: 'FAIZ FATHULMILLAH', prodi: 'Mentor PKKMB' },
+  { npm: '2322101016', nama: 'SITI NUR ANISSA', prodi: 'Mentor PKKMB' },
+  { npm: '2324101005', nama: 'MUHAMAD FIDIYANDI', prodi: 'Mentor PKKMB' },
+  { npm: '2324101011', nama: 'GUGUN GUNAWAN', prodi: 'Mentor PKKMB' },
+  { npm: '2404101035', nama: 'MUHAMAD ARIFIN', prodi: 'Mentor PKKMB' },
+  { npm: '2410101007', nama: 'IZKA AGASTIAR', prodi: 'Mentor PKKMB' },
+  { npm: '2410101019', nama: 'NAILATUL IZZAH NAPISAH', prodi: 'Mentor PKKMB' },
+  { npm: '2411101002', nama: 'INTAN NUR AFIAH', prodi: 'Mentor PKKMB' },
+  { npm: '2414101091', nama: 'MUHAMAD HAISYAM KHAIRIZMI', prodi: 'Mentor PKKMB' },
+  { npm: '2521101048', nama: 'GIAR FERDIAWAN', prodi: 'Mentor PKKMB' },
+  { npm: '2422101135', nama: 'SALSABILA KHAIRUNISA', prodi: 'Mentor PKKMB' },
+  { npm: '2422101205', nama: 'IRPAN NURHAQIQI', prodi: 'Mentor PKKMB' },
+  { npm: '2521101038', nama: 'FARAH ADIBA', prodi: 'Mentor PKKMB' },
 ];
 
 let isInitialized = false;
@@ -119,8 +116,9 @@ export async function ensureDbInitialized() {
       await db.batch(groupStatements, 'write');
     }
 
+    // Sync students using UPSERT so new names & NPMs update automatically
     const studentStatements = unmaMentorsList.map((s) => ({
-      sql: 'INSERT OR IGNORE INTO students (npm, nama, prodi, is_registered) VALUES (?, ?, ?, 0)',
+      sql: 'INSERT INTO students (npm, nama, prodi, is_registered) VALUES (?, ?, ?, 0) ON CONFLICT(npm) DO UPDATE SET nama = excluded.nama',
       args: [s.npm, s.nama.toUpperCase(), s.prodi],
     }));
     await db.batch(studentStatements, 'write');
