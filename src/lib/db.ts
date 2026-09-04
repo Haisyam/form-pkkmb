@@ -7,7 +7,14 @@ if (process.env.VERCEL) {
   dbPath = path.join('/tmp', 'pkkmb_mentor.db');
 }
 
-const db = new Database(dbPath);
+// Global Singleton pattern to prevent re-initializing database on hot reloads
+const globalForDb = global as unknown as { db: Database.Database };
+
+const db = globalForDb.db || new Database(dbPath);
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForDb.db = db;
+}
 
 // Enable WAL mode
 db.pragma('journal_mode = WAL');
@@ -85,6 +92,7 @@ const unmaMentorsList = [
 ];
 
 function seedDatabase() {
+  // Ensure 30 groups exist
   const groupCount = db.prepare('SELECT COUNT(*) as count FROM groups').get() as { count: number };
   if (groupCount.count < 30) {
     db.prepare('DELETE FROM groups').run();
@@ -101,10 +109,11 @@ function seedDatabase() {
     insertMany(groupsData);
   }
 
-  const insertStudent = db.prepare('INSERT OR REPLACE INTO students (npm, nama, prodi, is_registered) VALUES (?, ?, ?, COALESCE((SELECT is_registered FROM students WHERE npm = ?), 0))');
+  // Use INSERT OR IGNORE to NEVER overwrite or delete existing registered students
+  const insertStudent = db.prepare('INSERT OR IGNORE INTO students (npm, nama, prodi, is_registered) VALUES (?, ?, ?, 0)');
   const insertStudents = db.transaction((studentsList: typeof unmaMentorsList) => {
     for (const s of studentsList) {
-      insertStudent.run(s.npm, s.nama, s.prodi, s.npm);
+      insertStudent.run(s.npm, s.nama, s.prodi);
     }
   });
   insertStudents(unmaMentorsList);
