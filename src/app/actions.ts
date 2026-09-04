@@ -75,7 +75,7 @@ export async function submitRegistration(
         throw new Error(`NPM ${cleanNpm} tidak terdaftar dalam draf resmi Mentor PKKMB UNMA 2026/2027. Silakan periksa kembali NPM Anda.`);
       }
 
-      // Flexible name matching against uppercase names
+      // Flexible name matching
       const inputUpper = cleanNama.toUpperCase();
       const officialUpper = student.nama.toUpperCase();
 
@@ -88,16 +88,16 @@ export async function submitRegistration(
         throw new Error(`Nama "${cleanNama}" tidak cocok dengan pemilik NPM ${cleanNpm} di draf resmi mentor UNMA (${officialUpper}).`);
       }
 
-      // Check if NPM has already registered
-      if (student.is_registered) {
-        const existingReg = db.prepare(`
-          SELECT g.nama_kelompok 
-          FROM registrations r 
-          JOIN groups g ON r.group_id = g.id 
-          WHERE r.npm = ?
-        `).get(student.npm) as { nama_kelompok: string } | undefined;
+      // STRICT BLOCK: Check if NPM has ALREADY claimed a group in registrations table OR students.is_registered
+      const existingReg = db.prepare(`
+        SELECT g.nama_kelompok 
+        FROM registrations r 
+        JOIN groups g ON r.group_id = g.id 
+        WHERE r.npm = ?
+      `).get(student.npm) as { nama_kelompok: string } | undefined;
 
-        throw new Error(`NPM ${cleanNpm} (${officialUpper}) sudah terdaftar memilih ${existingReg?.nama_kelompok || 'Kelompok lain'}.`);
+      if (student.is_registered || existingReg) {
+        throw new Error(`NPM ${cleanNpm} (${officialUpper}) sudah mendaftar sebelumnya untuk ${existingReg?.nama_kelompok || 'Kelompok lain'}. Setiap mentor hanya diperbolehkan memilih 1 kelompok.`);
       }
 
       // 2. Check if selected group is available
@@ -109,7 +109,7 @@ export async function submitRegistration(
         throw new Error(`Maaf, ${group.nama_kelompok} baru saja diambil oleh mentor lain. Silakan pilih kelompok yang masih tersedia.`);
       }
 
-      // 3. Mark student as registered with UPPERCASE name
+      // 3. Mark student as registered
       db.prepare('UPDATE students SET nama = ?, is_registered = 1 WHERE npm = ?').run(officialUpper, student.npm);
 
       // 4. Lock group status to taken
@@ -118,8 +118,7 @@ export async function submitRegistration(
         throw new Error(`Gagal mengambil ${group.nama_kelompok}. Kelompok sudah terisi.`);
       }
 
-      // 5. Clean stale registration records & insert new registration
-      db.prepare('DELETE FROM registrations WHERE npm = ? OR group_id = ?').run(student.npm, groupId);
+      // 5. Insert registration
       db.prepare('INSERT INTO registrations (npm, group_id, no_wa, ukuran_baju) VALUES (?, ?, ?, ?)').run(student.npm, groupId, '-', cleanUkuran);
 
       return { groupName: group.nama_kelompok, officialNama: officialUpper };

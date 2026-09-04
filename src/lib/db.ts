@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import fs from 'fs';
 
 let dbPath = path.join(process.cwd(), 'pkkmb_mentor.db');
 
@@ -7,7 +8,7 @@ if (process.env.VERCEL) {
   dbPath = path.join('/tmp', 'pkkmb_mentor.db');
 }
 
-// Global Singleton pattern to prevent re-initializing database on hot reloads
+// Global Singleton pattern to preserve SQLite connection across module re-evaluations
 const globalForDb = global as unknown as { db: Database.Database };
 
 const db = globalForDb.db || new Database(dbPath);
@@ -54,7 +55,7 @@ try {
   // column already exists
 }
 
-// List of 30 official mentor candidates (All Names UPPERCASE)
+// List of 30 official mentor candidates
 const unmaMentorsList = [
   // Ormawa Univ & UKM (16)
   { npm: '2322101009', nama: 'FAIZ FATHULMILLAH', prodi: 'Ormawa Univ & UKM' },
@@ -92,11 +93,10 @@ const unmaMentorsList = [
 ];
 
 function seedDatabase() {
-  // Ensure 30 groups exist
+  // Ensure 30 groups exist WITHOUT deleting existing taken groups!
   const groupCount = db.prepare('SELECT COUNT(*) as count FROM groups').get() as { count: number };
-  if (groupCount.count < 30) {
-    db.prepare('DELETE FROM groups').run();
-    const insertGroup = db.prepare('INSERT INTO groups (nama_kelompok, deskripsi, status) VALUES (?, ?, ?)');
+  if (groupCount.count === 0) {
+    const insertGroup = db.prepare('INSERT OR IGNORE INTO groups (nama_kelompok, deskripsi, status) VALUES (?, ?, ?)');
     const insertMany = db.transaction((groupsList: { name: string; desc: string }[]) => {
       for (const g of groupsList) {
         insertGroup.run(g.name, g.desc, 'available');
@@ -109,11 +109,11 @@ function seedDatabase() {
     insertMany(groupsData);
   }
 
-  // Use INSERT OR REPLACE to update existing student names to uppercase
-  const insertStudent = db.prepare('INSERT OR REPLACE INTO students (npm, nama, prodi, is_registered) VALUES (?, ?, ?, COALESCE((SELECT is_registered FROM students WHERE npm = ?), 0))');
+  // Use INSERT OR IGNORE so existing registrations and is_registered flags are NEVER deleted or overwritten on deploy!
+  const insertStudent = db.prepare('INSERT OR IGNORE INTO students (npm, nama, prodi, is_registered) VALUES (?, ?, ?, 0)');
   const insertStudents = db.transaction((studentsList: typeof unmaMentorsList) => {
     for (const s of studentsList) {
-      insertStudent.run(s.npm, s.nama.toUpperCase(), s.prodi, s.npm);
+      insertStudent.run(s.npm, s.nama.toUpperCase(), s.prodi);
     }
   });
   insertStudents(unmaMentorsList);
