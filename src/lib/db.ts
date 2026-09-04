@@ -123,11 +123,11 @@ export async function ensureDbInitialized() {
     }));
     await db.batch(studentStatements, 'write');
 
-    // Auto-seed registration for MUHAMAD HAISYAM KHAIRIZMI (2414101091) - Kelompok 14 - Baju L
+    // Auto-seed registration for MUHAMAD HAISYAM KHAIRIZMI (2414101091) - Kelompok 02 - Baju L
     const haisyamNpm = '2414101091';
     const haisyamNama = 'MUHAMAD HAISYAM KHAIRIZMI';
     const haisyamUkuran = 'L';
-    const targetGroupId = 14;
+    const targetGroupId = 2; // Kelompok 02
     const jakartaTime = getJakartaTimestamp();
 
     await db.batch(

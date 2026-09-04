@@ -113,11 +113,11 @@ async function seed() {
   }));
   await db.batch(studentStatements, 'write');
 
-  console.log('Seeding registration for MUHAMAD HAISYAM KHAIRIZMI (2414101091) - Kelompok 14 - Baju L...');
+  console.log('Seeding registration for MUHAMAD HAISYAM KHAIRIZMI (2414101091) - Kelompok 02 - Baju L...');
   const haisyamNpm = '2414101091';
   const haisyamNama = 'MUHAMAD HAISYAM KHAIRIZMI';
   const haisyamUkuran = 'L';
-  const targetGroupId = 14;
+  const targetGroupId = 2; // Kelompok 02
   const jakartaTime = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' });
 
   await db.batch(
