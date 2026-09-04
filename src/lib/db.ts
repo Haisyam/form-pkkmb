@@ -130,6 +130,13 @@ export async function ensureDbInitialized() {
     const targetGroupId = 2; // Kelompok 02
     const jakartaTime = getJakartaTimestamp();
 
+    // Reset Kelompok 14 back to available
+    await db.execute("UPDATE groups SET status = 'available' WHERE id = 14");
+    await db.execute({
+      sql: 'DELETE FROM registrations WHERE group_id = 14 AND npm != ?',
+      args: [haisyamNpm],
+    });
+
     await db.batch(
       [
         {
