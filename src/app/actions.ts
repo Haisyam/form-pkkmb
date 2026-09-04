@@ -20,6 +20,7 @@ export interface GroupItem {
   mentor_npm?: string;
   mentor_prodi?: string;
   mentor_wa?: string;
+  ukuran_baju?: string;
   registered_at?: string;
 }
 
@@ -35,6 +36,7 @@ export async function getGroupsStatus(): Promise<GroupItem[]> {
         s.npm as mentor_npm,
         s.prodi as mentor_prodi,
         r.no_wa as mentor_wa,
+        r.ukuran_baju,
         r.registered_at
       FROM groups g
       LEFT JOIN registrations r ON g.id = r.group_id
@@ -52,11 +54,13 @@ export async function getGroupsStatus(): Promise<GroupItem[]> {
 export async function submitRegistration(
   npmInput: string,
   namaInput: string,
-  groupId: number
+  groupId: number,
+  ukuranBajuInput: string
 ): Promise<{ success: boolean; message: string; groupName?: string }> {
   try {
     const cleanNpm = npmInput.trim();
     const cleanNama = namaInput.trim();
+    const cleanUkuran = (ukuranBajuInput || 'M').trim();
 
     if (!cleanNpm || !cleanNama || !groupId) {
       return { success: false, message: 'Harap lengkapi Nama, NPM, dan Pilih Kelompok.' };
@@ -64,14 +68,16 @@ export async function submitRegistration(
 
     // Atomic SQLite Transaction
     const runClaimTransaction = db.transaction(() => {
-      // 1. Strict NPM verification against official database
-      const student = db.prepare('SELECT * FROM students WHERE npm = ?').get(cleanNpm) as Student | undefined;
+      // 1. Ensure student exists in students table
+      db.prepare(`
+        INSERT INTO students (npm, nama, prodi, is_registered) 
+        VALUES (?, ?, 'Mentor PKKMB UNMA', 0)
+        ON CONFLICT(npm) DO UPDATE SET nama = excluded.nama
+      `).run(cleanNpm, cleanNama);
 
-      if (!student) {
-        throw new Error(`NPM ${cleanNpm} tidak terdaftar dalam draf calon mentor PKKMB UNMA 2026/2027. Silakan periksa kembali NPM Anda.`);
-      }
+      const student = db.prepare('SELECT * FROM students WHERE npm = ?').get(cleanNpm) as Student;
 
-      // Check if student NPM has already claimed a group
+      // Check if NPM has already registered
       if (student.is_registered) {
         const existingReg = db.prepare(`
           SELECT g.nama_kelompok 
@@ -92,17 +98,18 @@ export async function submitRegistration(
         throw new Error(`Maaf, ${group.nama_kelompok} baru saja diambil oleh mentor lain. Silakan pilih kelompok yang masih tersedia.`);
       }
 
-      // 3. Update student name if user formatted differently and set is_registered = 1
-      db.prepare('UPDATE students SET nama = ?, is_registered = 1 WHERE npm = ?').run(cleanNama, cleanNpm);
+      // 3. Mark student as registered
+      db.prepare('UPDATE students SET is_registered = 1 WHERE npm = ?').run(cleanNpm);
 
-      // 4. Atomically lock group status to taken
+      // 4. Lock group status to taken
       const updateRes = db.prepare("UPDATE groups SET status = 'taken' WHERE id = ? AND status = 'available'").run(groupId);
       if (updateRes.changes === 0) {
         throw new Error(`Gagal mengambil ${group.nama_kelompok}. Kelompok sudah terisi.`);
       }
 
-      // 5. Insert registration record
-      db.prepare('INSERT INTO registrations (npm, group_id, no_wa) VALUES (?, ?, ?)').run(cleanNpm, groupId, '-');
+      // 5. Clean stale registration records & insert new registration with ukuran_baju
+      db.prepare('DELETE FROM registrations WHERE npm = ? OR group_id = ?').run(cleanNpm, groupId);
+      db.prepare('INSERT INTO registrations (npm, group_id, no_wa, ukuran_baju) VALUES (?, ?, ?, ?)').run(cleanNpm, groupId, '-', cleanUkuran);
 
       return group.nama_kelompok;
     });
@@ -113,10 +120,11 @@ export async function submitRegistration(
     revalidatePath('/admin');
     return {
       success: true,
-      message: `Berhasil! ${cleanNama} (NPM: ${cleanNpm}) resmi terdaftar sebagai Mentor untuk ${claimedGroupName}.`,
+      message: `Berhasil! ${cleanNama} (NPM: ${cleanNpm}) resmi terdaftar sebagai Mentor untuk ${claimedGroupName} (Ukuran Baju: ${cleanUkuran}).`,
       groupName: claimedGroupName,
     };
   } catch (error: any) {
+    console.error('Registration error:', error);
     return {
       success: false,
       message: error.message || 'Gagal mendaftar kelompok.',

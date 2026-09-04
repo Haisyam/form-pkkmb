@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getGroupsStatus, isAdminAuthenticated, adminLogout, adminResetRegistration, GroupItem } from '@/app/actions';
-import { ShieldCheck, Download, LogOut, RefreshCw, Lock, CheckCircle2, Search, Trash2 } from 'lucide-react';
+import { ShieldCheck, Download, LogOut, RefreshCw, Lock, CheckCircle2, Search, Trash2, Shirt } from 'lucide-react';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -62,13 +62,14 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    // Format CSV for Excel Compatibility (with BOM for UTF-8 in Excel)
-    const headers = ['No', 'Kelompok', 'Nama Mentor', 'NPM', 'Waktu Daftar'];
+    // Format CSV for Excel Compatibility
+    const headers = ['No', 'Kelompok', 'Nama Mentor', 'NPM', 'Ukuran Baju', 'Waktu Daftar'];
     const rows = takenGroups.map((g, index) => [
       index + 1,
       `"${g.nama_kelompok}"`,
       `"${g.mentor_nama || ''}"`,
       `"${g.mentor_npm || ''}"`,
+      `"${g.ukuran_baju || '-'}"`,
       `"${g.registered_at ? new Date(g.registered_at).toLocaleString('id-ID') : ''}"`,
     ]);
 
@@ -99,7 +100,8 @@ export default function AdminDashboardPage() {
     return (
       g.nama_kelompok.toLowerCase().includes(term) ||
       g.mentor_nama?.toLowerCase().includes(term) ||
-      g.mentor_npm?.includes(term)
+      g.mentor_npm?.includes(term) ||
+      g.ukuran_baju?.toLowerCase().includes(term)
     );
   });
 
@@ -149,7 +151,7 @@ export default function AdminDashboardPage() {
             <div className="relative flex-1 sm:w-64">
               <input
                 type="text"
-                placeholder="Cari kelompok, nama, NPM..."
+                placeholder="Cari kelompok, nama, NPM, baju..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
@@ -178,6 +180,9 @@ export default function AdminDashboardPage() {
                   <th className="p-4">Status</th>
                   <th className="p-4">Nama Mentor</th>
                   <th className="p-4">NPM</th>
+                  <th className="p-4 flex items-center gap-1">
+                    <Shirt className="w-3.5 h-3.5 text-blue-600" /> Ukuran Baju
+                  </th>
                   <th className="p-4 text-right">Aksi Admin</th>
                 </tr>
               </thead>
@@ -209,6 +214,15 @@ export default function AdminDashboardPage() {
                       <td className="p-4 font-mono">
                         {isTaken ? (
                           <span className="text-slate-700 font-semibold">{g.mentor_npm}</span>
+                        ) : (
+                          <span className="text-slate-300">-</span>
+                        )}
+                      </td>
+                      <td className="p-4 font-bold text-blue-800">
+                        {isTaken ? (
+                          <span className="bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
+                            {g.ukuran_baju || '-'}
+                          </span>
                         ) : (
                           <span className="text-slate-300">-</span>
                         )}

@@ -1,8 +1,6 @@
 import Database from 'better-sqlite3';
 import path from 'path';
-import fs from 'fs';
 
-// On Vercel serverless functions, write to /tmp directory if cwd is read-only
 let dbPath = path.join(process.cwd(), 'pkkmb_mentor.db');
 
 if (process.env.VERCEL) {
@@ -35,14 +33,23 @@ db.exec(`
     npm TEXT UNIQUE NOT NULL,
     group_id INTEGER UNIQUE NOT NULL,
     no_wa TEXT NOT NULL,
+    ukuran_baju TEXT DEFAULT '-',
     registered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (npm) REFERENCES students(npm),
     FOREIGN KEY (group_id) REFERENCES groups(id)
   );
 `);
 
+// Auto-add missing column if table already existed without ukuran_baju
+try {
+  db.exec("ALTER TABLE registrations ADD COLUMN ukuran_baju TEXT DEFAULT '-'");
+} catch (e) {
+  // column already exists
+}
+
 // List of 30 official mentor candidates
 const unmaMentorsList = [
+  // Ormawa Univ & UKM (16)
   { npm: '2322101009', nama: 'Faiz Fathulmillah', prodi: 'Ormawa Univ & UKM' },
   { npm: '2301101002', nama: 'NABIEL BAYU SATRYA RAMADHAN', prodi: 'Ormawa Univ & UKM' },
   { npm: '2301101052', nama: 'Alfat Ilafatuhshara', prodi: 'Ormawa Univ & UKM' },
@@ -59,6 +66,8 @@ const unmaMentorsList = [
   { npm: '2414101091', nama: 'Muhamad Haisyam Khairizmi', prodi: 'Ormawa Univ & UKM' },
   { npm: '2322101016', nama: 'Siti Nur Anissa', prodi: 'Ormawa Univ & UKM' },
   { npm: '2411101002', nama: 'Intan Nur Afiah', prodi: 'Ormawa Univ & UKM' },
+
+  // Ormawa Fakultas (14)
   { npm: '2410101007', nama: 'Izka Agastiar', prodi: 'Ormawa Fakultas' },
   { npm: '2310101004', nama: 'Ayang widianingsih', prodi: 'Ormawa Fakultas' },
   { npm: '2316101023', nama: 'N Sukma Alkindi', prodi: 'Ormawa Fakultas' },
@@ -77,7 +86,8 @@ const unmaMentorsList = [
 
 function seedDatabase() {
   const groupCount = db.prepare('SELECT COUNT(*) as count FROM groups').get() as { count: number };
-  if (groupCount.count === 0) {
+  if (groupCount.count < 30) {
+    db.prepare('DELETE FROM groups').run();
     const insertGroup = db.prepare('INSERT INTO groups (nama_kelompok, deskripsi, status) VALUES (?, ?, ?)');
     const insertMany = db.transaction((groupsList: { name: string; desc: string }[]) => {
       for (const g of groupsList) {

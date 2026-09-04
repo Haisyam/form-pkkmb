@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { getGroupsStatus, submitRegistration, GroupItem } from '@/app/actions';
-import { User, GraduationCap, Send, RefreshCw, CheckCircle2, AlertCircle, Sparkles, Lock } from 'lucide-react';
+import { User, GraduationCap, Send, RefreshCw, CheckCircle2, AlertCircle, Sparkles, Lock, Shirt } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function HomePage() {
@@ -13,6 +13,11 @@ export default function HomePage() {
   const [nama, setNama] = useState('');
   const [npm, setNpm] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState<number | ''>('');
+  
+  // Ukuran Baju State
+  const [ukuranOption, setUkuranOption] = useState<'S' | 'M' | 'L' | 'XL' | 'XXL' | 'custom'>('M');
+  const [customUkuran, setCustomUkuran] = useState('');
+
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -42,10 +47,12 @@ export default function HomePage() {
       return;
     }
 
+    const finalUkuran = ukuranOption === 'custom' ? (customUkuran.trim() || 'Custom') : ukuranOption;
+
     setSubmitting(true);
     setFeedback(null);
 
-    const res = await submitRegistration(npm, nama, Number(selectedGroupId));
+    const res = await submitRegistration(npm, nama, Number(selectedGroupId), finalUkuran);
     setSubmitting(false);
 
     if (res.success) {
@@ -57,6 +64,8 @@ export default function HomePage() {
       setNama('');
       setNpm('');
       setSelectedGroupId('');
+      setUkuranOption('M');
+      setCustomUkuran('');
       fetchGroups();
     } else {
       setFeedback({ type: 'error', message: res.message });
@@ -144,6 +153,62 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* Section Ukuran Baju */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <Shirt className="w-3.5 h-3.5 text-blue-600" /> Ukuran Baju Mentor
+                </span>
+                <span className="text-[10px] text-slate-400 font-normal lowercase">Pilih atau isi ukuran bebas</span>
+              </label>
+              
+              <div className="grid grid-cols-5 gap-1.5 mb-2">
+                {(['S', 'M', 'L', 'XL', 'XXL'] as const).map((sz) => (
+                  <button
+                    key={sz}
+                    type="button"
+                    onClick={() => setUkuranOption(sz)}
+                    className={`py-2 rounded-xl text-xs font-bold transition-all border ${
+                      ukuranOption === sz
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {sz === 'XXL' ? 'XXL (2XL)' : sz}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Size Option Toggle */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => setUkuranOption('custom')}
+                  className={`w-full py-2 px-3 rounded-xl text-xs font-semibold border transition-all text-left flex items-center justify-between ${
+                    ukuranOption === 'custom'
+                      ? 'bg-blue-50 text-blue-800 border-blue-300'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <span>Lainnya / Input Ukuran Bebas (Opsional)</span>
+                  <span className="text-[10px] font-bold text-blue-600">{ukuranOption === 'custom' ? '✓ Dipilih' : '+ Input Custom'}</span>
+                </button>
+              </div>
+
+              {/* Custom Input Field */}
+              {ukuranOption === 'custom' && (
+                <div className="mt-2 animate-in fade-in">
+                  <input
+                    type="text"
+                    placeholder="Contoh: 3XL / 4XL / Custom LD 120cm..."
+                    value={customUkuran}
+                    onChange={(e) => setCustomUkuran(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-blue-50/50 border border-blue-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+            </div>
+
             {/* Dropdown Kelompok Available */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
@@ -189,7 +254,7 @@ export default function HomePage() {
 
         </div>
 
-        {/* Live Data Monitor Minimalis (Tampilan Publik Tanpa Tombol Hapus) */}
+        {/* Live Data Monitor Minimalis */}
         <div className="bg-white/80 backdrop-blur-md rounded-3xl p-5 border border-slate-200/80 shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -222,7 +287,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-blue-200">
-                    Terisi
+                    Baju: {g.ukuran_baju || '-'}
                   </span>
                 </div>
               ))}
