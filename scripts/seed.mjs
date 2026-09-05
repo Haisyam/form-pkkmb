@@ -138,6 +138,30 @@ async function seed() {
     'write'
   );
 
+  console.log('Seeding registration for MUHAMAD ARIFIN (2404101035) - Kelompok 30 - Baju M...');
+  const arifinNpm = '2404101035';
+  const arifinNama = 'MUHAMAD ARIFIN';
+  const arifinUkuran = 'M';
+  const arifinGroupId = 30; // Kelompok 30
+
+  await db.batch(
+    [
+      {
+        sql: 'UPDATE students SET nama = ?, is_registered = 1 WHERE npm = ?',
+        args: [arifinNama, arifinNpm],
+      },
+      {
+        sql: "UPDATE groups SET status = 'taken' WHERE id = ? AND status = 'available'",
+        args: [arifinGroupId],
+      },
+      {
+        sql: 'INSERT OR IGNORE INTO registrations (npm, group_id, no_wa, ukuran_baju, registered_at) VALUES (?, ?, ?, ?, ?)',
+        args: [arifinNpm, arifinGroupId, '-', arifinUkuran, jakartaTime],
+      },
+    ],
+    'write'
+  );
+
   // Dynamically sync is_registered flag
   await db.execute('UPDATE students SET is_registered = 0 WHERE npm NOT IN (SELECT npm FROM registrations)');
   await db.execute('UPDATE students SET is_registered = 1 WHERE npm IN (SELECT npm FROM registrations)');

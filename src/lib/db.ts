@@ -181,6 +181,30 @@ export async function ensureDbInitialized() {
       'write'
     );
 
+    // Auto-seed registration ONLY IF NOT ALREADY TAKEN for MUHAMAD ARIFIN (2404101035) - Kelompok 30 - Baju M
+    const arifinNpm = '2404101035';
+    const arifinNama = 'MUHAMAD ARIFIN';
+    const arifinUkuran = 'M';
+    const arifinGroupId = 30; // Kelompok 30
+
+    await db.batch(
+      [
+        {
+          sql: 'UPDATE students SET nama = ?, is_registered = 1 WHERE npm = ?',
+          args: [arifinNama, arifinNpm],
+        },
+        {
+          sql: "UPDATE groups SET status = 'taken' WHERE id = ? AND status = 'available'",
+          args: [arifinGroupId],
+        },
+        {
+          sql: 'INSERT OR IGNORE INTO registrations (npm, group_id, no_wa, ukuran_baju, registered_at) VALUES (?, ?, ?, ?, ?)',
+          args: [arifinNpm, arifinGroupId, '-', arifinUkuran, jakartaTime],
+        },
+      ],
+      'write'
+    );
+
     // CRITICAL FIX: Dynamically sync is_registered flag with actual active registrations table
     // Ensures no mentor is ever locked in an orphaned state (is_registered = 1 without a registration row)
     await db.execute('UPDATE students SET is_registered = 0 WHERE npm NOT IN (SELECT npm FROM registrations)');
