@@ -24,6 +24,39 @@ export function getJakartaTimestamp(): string {
   return new Intl.DateTimeFormat('sv-SE', options).format(now);
 }
 
+export interface TimeStatus {
+  isClosed: boolean;
+  currentTimeWib: string;
+  deadlineText: string;
+}
+
+export function checkRegistrationDeadline(): TimeStatus {
+  const timeZone = process.env.TIME || process.env.TZ || 'Asia/Jakarta';
+  const now = new Date();
+  const timeFormatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+
+  const [hourStr, minuteStr, secondStr] = timeFormatter.format(now).split(':');
+  const hour = parseInt(hourStr, 10);
+  const minute = parseInt(minuteStr, 10);
+
+  const deadlineHour = parseInt(process.env.DEADLINE_HOUR || '10', 10);
+  const deadlineMinute = parseInt(process.env.DEADLINE_MINUTE || '0', 10);
+
+  const isClosed = hour > deadlineHour || (hour === deadlineHour && minute >= deadlineMinute);
+
+  return {
+    isClosed,
+    currentTimeWib: `${hourStr}:${minuteStr}:${secondStr} WIB`,
+    deadlineText: `${String(deadlineHour).padStart(2, '0')}.${String(deadlineMinute).padStart(2, '0')} WIB`,
+  };
+}
+
 // List of 30 official mentor candidates (Data Terbaru 2026/2027)
 export const unmaMentorsList = [
   { npm: '2301101002', nama: 'NABIEL BAYU SATRYA RAMADHAN', prodi: 'Mentor PKKMB' },

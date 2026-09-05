@@ -1,6 +1,6 @@
 'use server';
 
-import db, { ensureDbInitialized, getJakartaTimestamp } from '@/lib/db';
+import db, { ensureDbInitialized, getJakartaTimestamp, checkRegistrationDeadline, TimeStatus } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 
@@ -22,6 +22,10 @@ export interface GroupItem {
   mentor_wa?: string;
   ukuran_baju?: string;
   registered_at?: string;
+}
+
+export async function getRegistrationTimeStatus(): Promise<TimeStatus> {
+  return checkRegistrationDeadline();
 }
 
 export async function getGroupsStatus(): Promise<GroupItem[]> {
@@ -71,6 +75,15 @@ export async function submitRegistration(
   ukuranBajuInput: string
 ): Promise<{ success: boolean; message: string; groupName?: string }> {
   try {
+    // 0. Enforce Strict Server-side 10.00 WIB Deadline
+    const timeStatus = checkRegistrationDeadline();
+    if (timeStatus.isClosed) {
+      return {
+        success: false,
+        message: `Mohon maaf, pendaftaran telah ditutup karena batas waktu pengisian formulir sampai pukul ${timeStatus.deadlineText} telah berakhir.`,
+      };
+    }
+
     await ensureDbInitialized();
 
     const cleanNpm = npmInput.trim();
