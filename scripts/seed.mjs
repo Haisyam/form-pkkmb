@@ -138,10 +138,10 @@ async function seed() {
     'write'
   );
 
-  console.log('Seeding registration for MUHAMAD ARIFIN (2404101035) - Kelompok 30 - Baju M...');
+  console.log('Seeding registration for MUHAMAD ARIFIN (2404101035) - Kelompok 30 - Baju L...');
   const arifinNpm = '2404101035';
   const arifinNama = 'MUHAMAD ARIFIN';
-  const arifinUkuran = 'M';
+  const arifinUkuran = 'L';
   const arifinGroupId = 30; // Kelompok 30
 
   await db.batch(
@@ -155,7 +155,7 @@ async function seed() {
         args: [arifinGroupId],
       },
       {
-        sql: 'INSERT OR IGNORE INTO registrations (npm, group_id, no_wa, ukuran_baju, registered_at) VALUES (?, ?, ?, ?, ?)',
+        sql: 'INSERT INTO registrations (npm, group_id, no_wa, ukuran_baju, registered_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(npm) DO UPDATE SET ukuran_baju = excluded.ukuran_baju',
         args: [arifinNpm, arifinGroupId, '-', arifinUkuran, jakartaTime],
       },
     ],
