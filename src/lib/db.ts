@@ -123,19 +123,12 @@ export async function ensureDbInitialized() {
     }));
     await db.batch(studentStatements, 'write');
 
-    // Auto-seed registration for MUHAMAD HAISYAM KHAIRIZMI (2414101091) - Kelompok 02 - Baju L
+    // Auto-seed registration ONLY IF NOT ALREADY TAKEN for MUHAMAD HAISYAM KHAIRIZMI (2414101091) - Kelompok 02 - Baju L
     const haisyamNpm = '2414101091';
     const haisyamNama = 'MUHAMAD HAISYAM KHAIRIZMI';
     const haisyamUkuran = 'L';
     const targetGroupId = 2; // Kelompok 02
     const jakartaTime = getJakartaTimestamp();
-
-    // Reset Kelompok 14 back to available
-    await db.execute("UPDATE groups SET status = 'available' WHERE id = 14");
-    await db.execute({
-      sql: 'DELETE FROM registrations WHERE group_id = 14 AND npm != ?',
-      args: [haisyamNpm],
-    });
 
     await db.batch(
       [
@@ -144,16 +137,21 @@ export async function ensureDbInitialized() {
           args: [haisyamNama, haisyamNpm],
         },
         {
-          sql: "UPDATE groups SET status = 'taken' WHERE id = ?",
+          sql: "UPDATE groups SET status = 'taken' WHERE id = ? AND status = 'available'",
           args: [targetGroupId],
         },
         {
-          sql: 'INSERT INTO registrations (npm, group_id, no_wa, ukuran_baju, registered_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(npm) DO UPDATE SET group_id = excluded.group_id, ukuran_baju = excluded.ukuran_baju',
+          sql: 'INSERT OR IGNORE INTO registrations (npm, group_id, no_wa, ukuran_baju, registered_at) VALUES (?, ?, ?, ?, ?)',
           args: [haisyamNpm, targetGroupId, '-', haisyamUkuran, jakartaTime],
         },
       ],
       'write'
     );
+
+    // CRITICAL FIX: Dynamically sync is_registered flag with actual active registrations table
+    // Ensures no mentor is ever locked in an orphaned state (is_registered = 1 without a registration row)
+    await db.execute('UPDATE students SET is_registered = 0 WHERE npm NOT IN (SELECT npm FROM registrations)');
+    await db.execute('UPDATE students SET is_registered = 1 WHERE npm IN (SELECT npm FROM registrations)');
 
     isInitialized = true;
   } catch (error) {

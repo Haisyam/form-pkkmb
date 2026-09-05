@@ -120,13 +120,6 @@ async function seed() {
   const targetGroupId = 2; // Kelompok 02
   const jakartaTime = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' });
 
-  // Reset Kelompok 14 back to available
-  await db.execute("UPDATE groups SET status = 'available' WHERE id = 14");
-  await db.execute({
-    sql: 'DELETE FROM registrations WHERE group_id = 14 AND npm != ?',
-    args: [haisyamNpm],
-  });
-
   await db.batch(
     [
       {
@@ -134,16 +127,20 @@ async function seed() {
         args: [haisyamNama, haisyamNpm],
       },
       {
-        sql: "UPDATE groups SET status = 'taken' WHERE id = ?",
+        sql: "UPDATE groups SET status = 'taken' WHERE id = ? AND status = 'available'",
         args: [targetGroupId],
       },
       {
-        sql: 'INSERT INTO registrations (npm, group_id, no_wa, ukuran_baju, registered_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(npm) DO UPDATE SET group_id = excluded.group_id, ukuran_baju = excluded.ukuran_baju',
+        sql: 'INSERT OR IGNORE INTO registrations (npm, group_id, no_wa, ukuran_baju, registered_at) VALUES (?, ?, ?, ?, ?)',
         args: [haisyamNpm, targetGroupId, '-', haisyamUkuran, jakartaTime],
       },
     ],
     'write'
   );
+
+  // Dynamically sync is_registered flag
+  await db.execute('UPDATE students SET is_registered = 0 WHERE npm NOT IN (SELECT npm FROM registrations)');
+  await db.execute('UPDATE students SET is_registered = 1 WHERE npm IN (SELECT npm FROM registrations)');
 
   console.log('✅ Seeding completed successfully!');
 }
